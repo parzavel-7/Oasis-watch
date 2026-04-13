@@ -76,10 +76,7 @@ const MovieDetails = () => {
   return (
     <main className="min-h-screen bg-primary pb-20">
       <div className="pattern" />
-      <div className="wrapper py-10 relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="text-white/80 hover:text-white mb-8 inline-flex items-center gap-2 transition-colors">
-          <span className="text-xl">←</span> Back to Home
-        </Link>
+      <div className="wrapper relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Player Section */}
         <div

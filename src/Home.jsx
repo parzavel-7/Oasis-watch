@@ -73,7 +73,7 @@ const Home = () => {
     <main>
       <div className="pattern" />
       <div className="wrapper">
-        <header>
+        <header className="hero">
           <img src="./hero.png" alt="Hero" />
           <h1>
             Find Your <span className="text-gradient">Perfect Watch</span> Here
