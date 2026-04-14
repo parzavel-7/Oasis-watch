@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import Spinner from "../components/Spinner.jsx";
+import { saveWatchHistory } from "../appwrite.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const MovieDetails = () => {
   const { id } = useParams();
+  const { user } = useAuth();
   const [movie, setMovie] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -45,6 +48,11 @@ const MovieDetails = () => {
 
       const data = await response.json();
       setMovie(data);
+
+      // Save to watch history if user is logged in
+      if (user) {
+        saveWatchHistory(user.$id, data);
+      }
     } catch (error) {
       console.error("Error fetching movie details:", error);
       setErrorMessage("Could not load movie details.");
@@ -55,7 +63,7 @@ const MovieDetails = () => {
 
   useEffect(() => {
     fetchMovieDetails();
-  }, [id]);
+  }, [id, user]);
 
   if (isLoading)
     return (
