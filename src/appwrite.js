@@ -7,9 +7,14 @@ const client = new Client()
 export const database = new Databases(client);
 export const account = new Account(client);
 
-const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID;
-const WATCH_HISTORY_COLLECTION_ID = import.meta.env.VITE_APPWRITE_WATCH_HISTORY_COLLECTION_ID;
+const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID?.trim();
+const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID?.trim();
+const WATCH_HISTORY_COLLECTION_ID = import.meta.env.VITE_APPWRITE_WATCH_HISTORY_COLLECTION_ID?.trim();
+
+if (!DATABASE_ID || !COLLECTION_ID || !WATCH_HISTORY_COLLECTION_ID) {
+  console.error("Appwrite environment variables are missing or incorrectly configured.");
+}
+
 
 export const updateSearchCount = async (searchTerm, movie) => {
   try {

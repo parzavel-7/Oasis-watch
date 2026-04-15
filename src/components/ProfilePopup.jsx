@@ -15,10 +15,11 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
-    if (user) {
+    if (user && isOpen) {
       fetchHistory();
     }
-  }, [user]);
+  }, [user, isOpen]);
+
 
   const fetchHistory = async () => {
     const data = await getWatchHistory(user.$id);
@@ -29,7 +30,9 @@ const ProfilePopup = ({ isOpen, onClose }) => {
     e.preventDefault();
     setError("");
     const result = await login(email, password);
-    if (!result.success) {
+    if (result.success) {
+      window.location.href = "/"; // Reload and redirect to home
+    } else {
       setError(result.error);
     }
   };
@@ -40,6 +43,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
     try {
       await account.create("unique()", email, password, name);
       await login(email, password);
+      window.location.href = "/"; // Reload and redirect to home
     } catch (err) {
       setError(err.message);
     }
@@ -248,10 +252,13 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   </form>
                 )}
                 <button
-                  onClick={handleLogout}
-                  className="w-full py-4 rounded-full bg-red-500/5 border border-red-500/10 text-red-400 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 transition-all"
+                  onClick={() => {
+                    handleLogout();
+                    window.location.href = "/";
+                  }}
+                  className="w-full py-4 rounded-full bg-red-500/5 border border-red-500/10 text-red-400 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 transition-all font-black tracking-tight"
                 >
-                  Terminate Session
+                  Logout
                 </button>
               </div>
 
@@ -317,34 +324,6 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                       No Timeline Data
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Stats Bar (Redesigned for the airy look) */}
-              <div className="mt-8 grid grid-cols-3 w-full bg-white/[0.03] rounded-[2rem] border border-white/5 p-2">
-                <div className="py-3 flex flex-col items-center group">
-                  <span className="text-white text-sm font-black group-hover:text-[#AB8BFF] transition-colors">
-                    40k
-                  </span>
-                  <span className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">
-                    Likes
-                  </span>
-                </div>
-                <div className="py-3 flex flex-col items-center border-x border-white/5 group">
-                  <span className="text-white text-sm font-black group-hover:text-[#AB8BFF] transition-colors">
-                    20k
-                  </span>
-                  <span className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">
-                    Fans
-                  </span>
-                </div>
-                <div className="py-3 flex flex-col items-center group">
-                  <span className="text-white text-sm font-black group-hover:text-[#AB8BFF] transition-colors">
-                    9k
-                  </span>
-                  <span className="text-[8px] text-white/30 uppercase font-black tracking-widest mt-1">
-                    Saves
-                  </span>
                 </div>
               </div>
             </div>

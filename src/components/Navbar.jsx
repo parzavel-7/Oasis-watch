@@ -13,7 +13,10 @@ const Navbar = () => {
         <nav className="max-w-5xl mx-auto rounded-full border border-white/20 bg-white/10 backdrop-blur-xl shadow-2xl">
           <div className="px-6 sm:px-10 h-16 flex items-center justify-between relative">
             {/* Left: Logo */}
-            <Link to="/" className="flex items-center gap-2 group transition-all">
+            <Link
+              to="/"
+              className="flex items-center gap-2 group transition-all"
+            >
               <img
                 src="/logo.png"
                 alt="Oasis Watch"
@@ -33,13 +36,17 @@ const Navbar = () => {
 
             {/* Right: Profile Logo */}
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={() => setIsProfileOpen(true)}
                 className="flex items-center gap-2 group cursor-pointer outline-none"
               >
-                <div className="w-9 h-9 rounded-full overflow-hidden transition-all hover:scale-105 ring-2 ring-white/20 group-hover:ring-[#800080]/50">
+                <div className="w-9 h-9 overflow-hidden transition-all hover:scale-105">
                   <img
-                    src={user ? `https://ui-avatars.com/api/?name=${user.name}&background=random` : "/profile.png"}
+                    src={
+                      user
+                        ? `https://ui-avatars.com/api/?name=${user.name}&background=random`
+                        : "/profile.png"
+                    }
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
@@ -50,9 +57,9 @@ const Navbar = () => {
         </nav>
       </div>
 
-      <ProfilePopup 
-        isOpen={isProfileOpen} 
-        onClose={() => setIsProfileOpen(false)} 
+      <ProfilePopup
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
       />
     </>
   );
