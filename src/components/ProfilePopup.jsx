@@ -252,8 +252,8 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   </form>
                 )}
                 <button
-                  onClick={() => {
-                    handleLogout();
+                  onClick={async () => {
+                    await logout();
                     window.location.href = "/";
                   }}
                   className="w-full py-4 rounded-full bg-red-500/5 border border-red-500/10 text-red-400 text-xs font-black uppercase tracking-widest hover:bg-red-500/10 transition-all font-black tracking-tight"
