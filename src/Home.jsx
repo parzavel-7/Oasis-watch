@@ -68,14 +68,20 @@ const Home = () => {
   };
 
   const loadWatchHistory = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, skipping watch history load");
+      return;
+    }
+    console.log("Fetching watch history for user:", user.$id);
     try {
       const history = await getWatchHistory(user.$id);
+      console.log("Watch history fetched successfully:", history.length, "items found");
       setWatchHistory(history);
     } catch (err) {
-      console.error("Error fetching watch history:", err);
+      console.error("Error fetching watch history in Home component:", err);
     }
   };
+
 
   useEffect(() => {
     fetchMovies(debouncedSearchTerm);
@@ -98,15 +104,20 @@ const Home = () => {
             with Oasis.
           </h1>
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+
+          {/* Continue Watching Section - Inside Hero */}
+          {user && !searchTerm && (
+            <div className="mt-12 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000">
+              <ContinueWatching history={watchHistory} />
+            </div>
+          )}
         </header>
 
-        {user && watchHistory.length > 0 && !searchTerm && (
-          <ContinueWatching history={watchHistory} />
-        )}
 
 
         {trendingMovies.length > 0 && (
           <section className="trending">
+
             <h2>Trending Movies</h2>
             <ul>
               {trendingMovies.map((movie, index) => (

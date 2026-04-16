@@ -13,6 +13,9 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const [error, setError] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
 
   useEffect(() => {
     if (user && isOpen) {
@@ -187,14 +190,33 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                     </button>
                   )}
                 </div>
-                <input
-                  type="password"
-                  placeholder="Password"
-                  className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/5 text-white placeholder-white/20 outline-none focus:bg-white/10 focus:border-[#AB8BFF]/30 transition-all text-sm font-medium"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative group">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/5 text-white placeholder-white/20 outline-none focus:bg-white/10 focus:border-[#AB8BFF]/30 transition-all text-sm font-medium"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40"
+                  >
+                    {showPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.254 0 2.415.279 3.44.775M18.665 18.825A10.05 10.05 0 0021.542 12c-1.274-4.057-5.064-7-9.542-7-1.254 0-2.415.279-3.44.775M1 1l22 22" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
 
                 {error && (
                   <p className="text-red-400 text-[10px] text-center uppercase font-bold tracking-widest">
@@ -230,14 +252,33 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                     onSubmit={handleChangePassword}
                     className="w-full space-y-3 p-4 rounded-[2rem] bg-white/5 border border-white/5"
                   >
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      className="w-full px-5 py-3 rounded-2xl bg-white/5 border border-white/5 text-white text-xs outline-none focus:bg-white/10"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      required
-                    />
+                    <div className="relative group">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        placeholder="New Password"
+                        className="w-full px-5 py-3 rounded-2xl bg-white/5 border border-white/5 text-white text-xs outline-none focus:bg-white/10"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40"
+                      >
+                        {showNewPassword ? (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7 1.274-4.057 5.064-7 9.542-7 1.254 0 2.415.279 3.44.775M18.665 18.825A10.05 10.05 0 0021.542 12c-1.274-4.057-5.064-7-9.542-7-1.254 0-2.415.279-3.44.775M1 1l22 22" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+
                     <div className="flex gap-2">
                       <button className="flex-1 py-3 rounded-full bg-[#8BC34A] text-[#030014] text-[10px] font-black uppercase tracking-widest hover:brightness-110 transition-all">
                         Save
