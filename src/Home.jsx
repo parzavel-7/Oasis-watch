@@ -4,7 +4,7 @@ import { useDebounce } from "react-use";
 import Search from "./components/Search.jsx";
 import Spinner from "./components/Spinner.jsx";
 import MovieCard from "./components/MovieCard.jsx";
-import { getTrendingMovies, updateSearchCount, getWatchHistory } from "./appwrite.js";
+import { getTrendingMovies, updateSearchCount, getWatchHistory } from "./supabase.js";
 import { useAuth } from "./context/AuthContext.jsx";
 import ContinueWatching from "./components/ContinueWatching.jsx";
 

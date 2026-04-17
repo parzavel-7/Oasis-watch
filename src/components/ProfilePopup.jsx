@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getWatchHistory, account } from "../appwrite";
+import { getWatchHistory } from "../supabase";
 import { Link } from "react-router-dom";
 
 const ProfilePopup = ({ isOpen, onClose }) => {
@@ -15,6 +15,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
 
   useEffect(() => {
@@ -25,7 +26,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
 
 
   const fetchHistory = async () => {
-    const data = await getWatchHistory(user.$id);
+    const data = await getWatchHistory(user.id);
     setHistory(data);
   };
 
@@ -43,19 +44,28 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-    try {
-      await account.create("unique()", email, password, name);
-      await login(email, password);
-      window.location.href = "/"; // Reload and redirect to home
-    } catch (err) {
-      setError(err.message);
+    setSuccessMessage("");
+    const result = await register(email, password, name);
+    if (result.success) {
+      if (result.session) {
+        window.location.href = "/"; // Auto-logged in
+      } else {
+        setSuccessMessage(result.message);
+        // Clear form
+        setEmail("");
+        setPassword("");
+        setName("");
+      }
+    } else {
+      setError(result.error);
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
     try {
-      await account.updatePassword(newPassword);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       setIsChangingPassword(false);
       setNewPassword("");
       alert("Password updated successfully!");
@@ -91,7 +101,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
             <div className="w-32 h-32 rounded-[2rem] overflow-hidden bg-[#1a1635] border border-white/10 shadow-inner flex items-center justify-center">
               {user ? (
                 <img
-                  src={`https://ui-avatars.com/api/?name=${user.name}&background=800080&color=fff&bold=true&size=128`}
+                  src={`https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || user.email}&background=800080&color=fff&bold=true&size=128`}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -224,6 +234,14 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   </p>
                 )}
 
+                {successMessage && (
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
+                    <p className="text-green-400 text-xs font-bold leading-relaxed">
+                      {successMessage}
+                    </p>
+                  </div>
+                )}
+
                 <button className="w-full py-4 rounded-[2rem] bg-[#B89FFF] text-[#030014] font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg active:scale-95 mt-6">
                   {activeTab === "login" ? "Sign In" : "Get Started"}
                 </button>
@@ -232,7 +250,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
           ) : (
             <div className="w-full flex flex-col items-center">
               <h2 className="text-3xl font-black text-white mb-1 tracking-tighter">
-                {user.name}
+                {user.user_metadata?.full_name || user.email.split('@')[0]}
               </h2>
               <p className="text-[10px] text-purple-400 uppercase tracking-widest font-black mb-8 px-3 py-1 bg-purple-400/10 rounded-full border border-purple-400/20">
                 Verified Oasis Watcher
@@ -317,7 +335,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   {history.length > 0 ? (
                     history.map((item) => (
                       <Link
-                        key={item.$id}
+                        key={item.id}
                         to={`/movie/${item.movie_id}`}
                         onClick={onClose}
                         className="flex items-center gap-4 p-4 rounded-[2rem] bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] hover:border-white/10 transition-all group relative overflow-hidden"

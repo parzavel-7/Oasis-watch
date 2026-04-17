@@ -5,6 +5,7 @@ import Footer from "./components/Footer.jsx";
 import Home from "./Home.jsx";
 import MovieDetails from "./pages/MovieDetails.jsx";
 
+
 const App = () => {
   return (
     <AuthProvider>
@@ -13,6 +14,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/movie/:id" element={<MovieDetails />} />
+
         </Routes>
         <Footer />
       </Router>

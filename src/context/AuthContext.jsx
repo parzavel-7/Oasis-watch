@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { account, getCurrentUser, logout } from "../appwrite";
+import { supabase, getCurrentUser } from "../supabase";
 
 const AuthContext = createContext();
 
@@ -9,6 +9,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkUserStatus();
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkUserStatus = async () => {
@@ -24,9 +34,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      await account.createEmailPasswordSession(email, password);
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
@@ -35,12 +47,38 @@ export const AuthProvider = ({ children }) => {
   };
 
   const handleLogout = async () => {
-    await logout();
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("Logout error:", error);
     setUser(null);
   };
 
+  const register = async (email, password, name) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+      if (error) throw error;
+      
+      // If session is null, it means email confirmation is required
+      return { 
+        success: true, 
+        session: data.session,
+        message: data.session ? "Registration successful!" : "Please check your email to confirm your account."
+      };
+    } catch (error) {
+      console.error("Registration error:", error);
+      return { success: false, error: error.message };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout: handleLogout, setUser, checkUserStatus }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout: handleLogout, setUser, checkUserStatus }}>
       {children}
     </AuthContext.Provider>
   );

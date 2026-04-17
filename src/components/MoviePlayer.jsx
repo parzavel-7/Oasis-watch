@@ -2,9 +2,7 @@
 import React, { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { useParams, Link } from "react-router-dom";
-import { databases, Query } from "../appwrite";
-const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
-const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID;
+import { supabase } from "../supabase";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY; // TMDB v4 token
@@ -33,15 +31,14 @@ export default function MoviePlayer() {
         }
         setMovie(movieData);
 
-        // 2. Fetch streaming URL from Appwrite
-        const appwriteRes = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTION_ID,
-          [Query.equal("movie_id", movieId)]
-        );
+        // 2. Fetch streaming URL from Supabase
+        const { data: movies, error: dbError } = await supabase
+          .from("movies") // Assuming a 'movies' table for specific stream URLs
+          .select("stream_url")
+          .eq("movie_id", movieId);
 
-        if (appwriteRes.documents.length > 0) {
-          setStreamUrl(appwriteRes.documents[0].stream_url);
+        if (movies && movies.length > 0) {
+          setStreamUrl(movies[0].stream_url);
         } else {
           // fallback public domain movie
           setStreamUrl(

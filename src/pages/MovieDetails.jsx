@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import Spinner from "../components/Spinner.jsx";
-import { saveWatchHistory } from "../appwrite.js";
+import { saveWatchHistory } from "../supabase.js";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
@@ -63,6 +63,7 @@ const MovieDetails = () => {
 
   useEffect(() => {
     fetchMovieDetails();
+    window.scrollTo(0, 0);
   }, [id, user]);
 
   if (isLoading)
