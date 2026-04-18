@@ -42,7 +42,11 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       console.error("Login error:", error);
-      return { success: false, error: error.message };
+      // Make Supabase errors more human-friendly
+      let msg = error.message;
+      if (msg === "Invalid login credentials") msg = "Incorrect email or password.";
+      if (msg.includes("Email not confirmed")) msg = "Email not confirmed";
+      return { success: false, error: msg };
     }
   };
 

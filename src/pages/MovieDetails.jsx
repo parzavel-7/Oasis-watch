@@ -51,7 +51,7 @@ const MovieDetails = () => {
 
       // Save to watch history if user is logged in
       if (user) {
-        saveWatchHistory(user.$id, data);
+        saveWatchHistory(user.id, data);
       }
     } catch (error) {
       console.error("Error fetching movie details:", error);

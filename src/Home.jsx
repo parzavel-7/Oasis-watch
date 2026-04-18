@@ -72,9 +72,9 @@ const Home = () => {
       console.log("No user found, skipping watch history load");
       return;
     }
-    console.log("Fetching watch history for user:", user.$id);
+    console.log("Fetching watch history for user:", user.id);
     try {
-      const history = await getWatchHistory(user.$id);
+      const history = await getWatchHistory(user.id);
       console.log("Watch history fetched successfully:", history.length, "items found");
       setWatchHistory(history);
     } catch (err) {
@@ -121,7 +121,7 @@ const Home = () => {
             <h2>Trending Movies</h2>
             <ul>
               {trendingMovies.map((movie, index) => (
-                <li key={movie.$id}>
+                <li key={movie.id}>
                   <p>{index + 1}</p>
                   <Link to={`/movie/${movie.movie_id}`}>
                     <img src={movie.poster_url} alt={movie.title} />

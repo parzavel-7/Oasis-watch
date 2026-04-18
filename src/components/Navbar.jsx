@@ -44,7 +44,7 @@ const Navbar = () => {
                   <img
                     src={
                       user
-                        ? `https://ui-avatars.com/api/?name=${user.name}&background=random`
+                        ? `https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || user.email}&background=random`
                         : "/profile.png"
                     }
                     alt="Profile"

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getWatchHistory } from "../supabase";
+import { getWatchHistory, supabase } from "../supabase";
 import { Link } from "react-router-dom";
 
 const ProfilePopup = ({ isOpen, onClose }) => {
-  const { user, login, logout, checkUserStatus } = useAuth();
+  const { user, login, register, logout, checkUserStatus } = useAuth();
   const [activeTab, setActiveTab] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +16,8 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailNotConfirmed, setEmailNotConfirmed] = useState(false);
 
 
   useEffect(() => {
@@ -33,11 +35,32 @@ const ProfilePopup = ({ isOpen, onClose }) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setEmailNotConfirmed(false);
+    setIsLoading(true);
     const result = await login(email, password);
+    setIsLoading(false);
     if (result.success) {
-      window.location.href = "/"; // Reload and redirect to home
+      window.location.href = "/";
     } else {
-      setError(result.error);
+      // Special handling for unconfirmed email
+      if (result.error && result.error.toLowerCase().includes("email not confirmed")) {
+        setEmailNotConfirmed(true);
+      } else {
+        setError(result.error || "Login failed. Check your email and password.");
+      }
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) { setError("Enter your email address first."); return; }
+    setIsLoading(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email });
+    setIsLoading(false);
+    if (error) {
+      setError(error.message);
+    } else {
+      setEmailNotConfirmed(false);
+      setSuccessMessage("Confirmation email resent! Please check your inbox.");
     }
   };
 
@@ -45,19 +68,20 @@ const ProfilePopup = ({ isOpen, onClose }) => {
     e.preventDefault();
     setError("");
     setSuccessMessage("");
+    setIsLoading(true);
     const result = await register(email, password, name);
+    setIsLoading(false);
     if (result.success) {
       if (result.session) {
-        window.location.href = "/"; // Auto-logged in
+        window.location.href = "/";
       } else {
-        setSuccessMessage(result.message);
-        // Clear form
+        setSuccessMessage(result.message || "Please check your email to confirm your account.");
         setEmail("");
         setPassword("");
         setName("");
       }
     } else {
-      setError(result.error);
+      setError(result.error || "Registration failed. Please try again.");
     }
   };
 
@@ -193,6 +217,7 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   />
                   {email && (
                     <button
+                      type="button"
                       onClick={() => setEmail("")}
                       className="absolute right-6 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/40"
                     >
@@ -234,6 +259,22 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   </p>
                 )}
 
+                {emailNotConfirmed && (
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-2xl p-4 text-center space-y-3">
+                    <p className="text-blue-300 text-xs font-bold leading-relaxed">
+                      📧 Your email is not confirmed yet. Please check your inbox and click the confirmation link.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResendConfirmation}
+                      disabled={isLoading}
+                      className="text-[10px] text-blue-400 uppercase tracking-widest font-black hover:text-blue-300 transition-colors disabled:opacity-50"
+                    >
+                      {isLoading ? "Sending..." : "Resend confirmation email"}
+                    </button>
+                  </div>
+                )}
+
                 {successMessage && (
                   <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
                     <p className="text-green-400 text-xs font-bold leading-relaxed">
@@ -242,8 +283,16 @@ const ProfilePopup = ({ isOpen, onClose }) => {
                   </div>
                 )}
 
-                <button className="w-full py-4 rounded-[2rem] bg-[#B89FFF] text-[#030014] font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg active:scale-95 mt-6">
-                  {activeTab === "login" ? "Sign In" : "Get Started"}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-4 rounded-[2rem] bg-[#B89FFF] text-[#030014] font-black text-sm uppercase tracking-widest hover:brightness-110 transition-all shadow-lg active:scale-95 mt-6 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isLoading
+                    ? "Please wait..."
+                    : activeTab === "login"
+                    ? "Sign In"
+                    : "Get Started"}
                 </button>
               </form>
             </div>
