@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { removeFromWatchHistory } from "../supabase";
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const TMDB_API = "https://api.themoviedb.org/3";
@@ -8,6 +10,20 @@ const ContinueWatching = ({ history }) => {
   const rowRef = useRef(null);
   const [enrichedHistory, setEnrichedHistory] = useState([]);
   const hasHistory = history && history.length > 0;
+  const { user } = useAuth();
+
+  const handleRemove = async (e, movieId) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Optimistically update the UI
+    setEnrichedHistory((prev) => prev.filter((item) => item.movie_id !== movieId));
+
+    // Remove from database
+    if (user && user.id) {
+      await removeFromWatchHistory(user.id, movieId);
+    }
+  };
 
   // Enrich history with backdrops if they are missing
   useEffect(() => {
@@ -76,7 +92,7 @@ const ContinueWatching = ({ history }) => {
   return (
     <section className="w-full mt-6 mb-4">
       <div className="flex items-center gap-3 mb-5 px-1">
-        <div className="w-[3px] h-7 bg-red-600 rounded-sm shadow-[0_0_12px_rgba(220,38,38,0.7)]" />
+        <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
         <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
           Continue watching
         </h2>
@@ -105,9 +121,7 @@ const ContinueWatching = ({ history }) => {
               <Link
                 key={item.$id || index}
                 to={`/movie/${item.movie_id}`}
-                className={`flex-none w-[200px] sm:w-[240px] md:w-[280px] snap-start group/card relative rounded-md overflow-hidden bg-[#181818] shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:z-10 ${
-                  isFirst ? "ring-2 ring-red-600/80" : ""
-                }`}
+                className="flex-none w-[200px] sm:w-[240px] md:w-[280px] snap-start group/card relative rounded-md overflow-hidden bg-[#181818] shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:z-10"
               >
                 <div className="w-full aspect-video relative overflow-hidden">
                   <img
@@ -126,14 +140,12 @@ const ContinueWatching = ({ history }) => {
                       MOVIE
                     </span>
                   </div>
-                  <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-[3px] rounded-sm">
-                    <svg className="w-3 h-3 text-white/60 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-[9px] sm:text-[10px] font-semibold text-white/80 tabular-nums">
-                      {mockTime}
-                    </span>
+                  <div className="absolute bottom-8 left-2 right-10">
+                    <p className="text-white text-[11px] sm:text-[12px] font-semibold leading-tight line-clamp-1 drop-shadow-lg">
+                      {item.movie_title}
+                    </p>
                   </div>
+
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
                     <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
                       <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -141,10 +153,19 @@ const ContinueWatching = ({ history }) => {
                       </svg>
                     </div>
                   </div>
+
+                  {/* Remove Button */}
+                  <button
+                    onClick={(e) => handleRemove(e, item.movie_id)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/50 hover:text-white hover:bg-red-600 transition-all opacity-0 group-hover/card:opacity-100 z-30"
+                    aria-label="Remove from history"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-                <div className="w-full h-[3px] bg-white/[0.08]">
-                  <div className="h-full bg-red-600 shadow-[0_0_6px_rgba(220,38,38,0.6)]" style={{ width: `${progress}%` }} />
-                </div>
+
               </Link>
             );
           })}

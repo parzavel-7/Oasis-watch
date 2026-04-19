@@ -120,3 +120,17 @@ export const getWatchHistory = async (userId) => {
     return [];
   }
 };
+
+export const removeFromWatchHistory = async (userId, movieId) => {
+  if (!userId || !movieId) return;
+  try {
+    const { error } = await supabase
+      .from("watch_history")
+      .delete()
+      .match({ user_id: userId, movie_id: movieId.toString() });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Supabase removeFromWatchHistory error:", error);
+  }
+};
