@@ -121,13 +121,29 @@ export const getWatchHistory = async (userId) => {
   }
 };
 
-export const removeFromWatchHistory = async (userId, movieId) => {
+export const removeFromWatchHistory = async (userId, movieId, rowId) => {
   if (!userId || !movieId) return;
   try {
+    if (rowId) {
+      // Direct primary key deletion is the most robust target mechanism
+      const { error } = await supabase.from("watch_history").delete().eq("id", rowId);
+      if (error) throw error;
+      return;
+    }
+
+    // Try deleting with string type fallback
     const { error } = await supabase
       .from("watch_history")
       .delete()
-      .match({ user_id: userId, movie_id: movieId.toString() });
+      .eq("user_id", userId)
+      .eq("movie_id", movieId);
+
+    // Some DB schemas might store movie_id as an integer and postgrest can be sensitive
+    await supabase
+      .from("watch_history")
+      .delete()
+      .eq("user_id", userId)
+      .eq("movie_id", Number(movieId));
 
     if (error) throw error;
   } catch (error) {

@@ -12,7 +12,7 @@ const ContinueWatching = ({ history }) => {
   const hasHistory = history && history.length > 0;
   const { user } = useAuth();
 
-  const handleRemove = async (e, movieId) => {
+  const handleRemove = async (e, movieId, rowId) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -21,7 +21,7 @@ const ContinueWatching = ({ history }) => {
 
     // Remove from database
     if (user && user.id) {
-      await removeFromWatchHistory(user.id, movieId);
+      await removeFromWatchHistory(user.id, movieId, rowId);
     }
   };
 
@@ -121,7 +121,7 @@ const ContinueWatching = ({ history }) => {
               <Link
                 key={item.$id || index}
                 to={`/movie/${item.movie_id}`}
-                className="flex-none w-[200px] sm:w-[240px] md:w-[280px] snap-start group/card relative rounded-md overflow-hidden bg-[#181818] shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:z-10"
+                className="flex-none w-[150px] sm:w-[180px] md:w-[210px] snap-start group/card relative rounded-md overflow-hidden bg-[#181818] shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:z-10"
               >
                 <div className="w-full aspect-video relative overflow-hidden">
                   <img
@@ -156,7 +156,7 @@ const ContinueWatching = ({ history }) => {
 
                   {/* Remove Button */}
                   <button
-                    onClick={(e) => handleRemove(e, item.movie_id)}
+                    onClick={(e) => handleRemove(e, item.movie_id, item.id || item.$id)}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/50 hover:text-white hover:bg-red-600 transition-all opacity-0 group-hover/card:opacity-100 z-30"
                     aria-label="Remove from history"
                   >

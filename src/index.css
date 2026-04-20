@@ -73,7 +73,7 @@
     }
 
     & ul li img {
-      @apply w-[127px] h-[163px] rounded-lg object-cover -ml-3.5;
+      @apply w-[127px] h-[147px] rounded-lg object-cover -ml-3.5;
     }
   }
 
@@ -97,7 +97,7 @@
     @apply space-y-9;
 
     & ul {
-      @apply grid grid-cols-1 gap-5 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4;
+      @apply grid grid-cols-2 gap-5 md:grid-cols-4;
     }
   }
 
@@ -105,7 +105,7 @@
     @apply bg-dark-100 p-5 rounded-2xl shadow-inner shadow-light-100/10;
 
     & img {
-      @apply rounded-lg h-auto w-full;
+      @apply rounded-lg w-full aspect-[20/27] object-cover;
     }
 
     & h3 {

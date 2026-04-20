@@ -25,13 +25,38 @@ const TMDB_GENRES = [
   { id: 16, name: "Animation", icon: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg> },
 ];
 
+const TabToggle = ({ activeType, setType }) => (
+  <div className="flex items-center gap-6 border-b border-[#1f2123] w-fit px-1">
+    <button 
+      onClick={() => setType('movie')}
+      className={`text-sm md:text-base transition-all duration-300 relative pb-1 ${activeType === 'movie' ? 'text-white font-medium' : 'text-white/40 font-medium hover:text-white/60'}`}
+    >
+      Movies
+      {activeType === 'movie' && (
+        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
+      )}
+    </button>
+    <button 
+      onClick={() => setType('tv')}
+      className={`text-sm md:text-base transition-all duration-300 relative pb-1 ${activeType === 'tv' ? 'text-white font-medium' : 'text-white/40 font-medium hover:text-white/60'}`}
+    >
+      Series
+      {activeType === 'tv' && (
+        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
+      )}
+    </button>
+  </div>
+);
+
 const Home = () => {
   const { searchTerm, setSearchTerm } = useSearch();
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  
   const [moviesList, setMoviesList] = useState([]);
   const [topRatedMovies, setTopRatedMovies] = useState([]);
   const [trendingMovies, setTrendingMovies] = useState([]);
   const [genreMovies, setGenreMovies] = useState([]);
+  
   const [selectedGenre, setSelectedGenre] = useState(TMDB_GENRES[0]);
   const [watchHistory, setWatchHistory] = useState([]);
   
@@ -42,12 +67,17 @@ const Home = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
   
+  // Section Types
+  const [trendingType, setTrendingType] = useState('movie');
+  const [allType, setAllType] = useState('movie');
+  const [topRatedType, setTopRatedType] = useState('movie');
+  const [genreType, setGenreType] = useState('movie');
+
   const dropdownRef = useRef(null);
   const { user } = useAuth();
 
   useDebounce(() => setDebouncedSearchTerm(searchTerm || ""), 500, [searchTerm]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -63,16 +93,16 @@ const Home = () => {
     setErrorMessage("");
 
     try {
-      const endpoint = query
-        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      let endpoint;
+      if (query) {
+        endpoint = `${API_BASE_URL}/search/${allType}?query=${encodeURIComponent(query)}`;
+      } else {
+        endpoint = `${API_BASE_URL}/discover/${allType}?sort_by=popularity.desc`;
+      }
 
       const res = await fetch(endpoint, {
         method: "GET",
-        headers: {
-          accept: "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
+        headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` },
       });
 
       if (!res.ok) throw new Error("Network response was not ok");
@@ -80,7 +110,7 @@ const Home = () => {
       const data = await res.json();
       setMoviesList(data.results || []);
 
-      if (query && data.results.length > 0) {
+      if (query && data.results.length > 0 && allType === 'movie') {
         await updateSearchCount(query, data.results[0]);
       }
     } catch (err) {
@@ -94,7 +124,7 @@ const Home = () => {
   const loadTopRatedMovies = async () => {
     setIsTopRatedLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/movie/top_rated?language=en-US&page=1`, {
+      const res = await fetch(`${API_BASE_URL}/${topRatedType}/top_rated?language=en-US&page=1`, {
         headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` }
       });
       const data = await res.json();
@@ -109,11 +139,12 @@ const Home = () => {
   const loadGenreMovies = async (genreId) => {
     setIsGenreLoading(true);
     try {
-      // Fetch strictly the most recent released movies
       const currentDate = new Date();
       const dateString = currentDate.toISOString().split('T')[0];
-
-      const res = await fetch(`${API_BASE_URL}/discover/movie?with_genres=${genreId}&primary_release_date.lte=${dateString}&vote_count.gte=10&sort_by=primary_release_date.desc`, {
+      const dateFilter = genreType === 'movie' ? 'primary_release_date.lte' : 'first_air_date.lte';
+      const sortFilter = genreType === 'movie' ? 'primary_release_date.desc' : 'first_air_date.desc';
+      
+      const res = await fetch(`${API_BASE_URL}/discover/${genreType}?with_genres=${genreId}&${dateFilter}=${dateString}&vote_count.gte=10&sort_by=${sortFilter}`, {
         headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` }
       });
       const data = await res.json();
@@ -127,8 +158,12 @@ const Home = () => {
 
   const loadTrendingMovies = async () => {
     try {
-      const movies = await getTrendingMovies();
-      setTrendingMovies(movies);
+      const res = await fetch(`${API_BASE_URL}/trending/${trendingType}/day?language=en-US`, {
+        headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` }
+      });
+      if (!res.ok) throw new Error("Network response was not ok");
+      const data = await res.json();
+      setTrendingMovies(data.results.slice(0, 5) || []);
     } catch (err) {
       console.error("Error fetching trending movies:", err);
     }
@@ -144,21 +179,15 @@ const Home = () => {
     }
   };
 
-  useEffect(() => {
-    fetchMovies(debouncedSearchTerm);
-  }, [debouncedSearchTerm]);
+  // Triggers for specific type changes
+  useEffect(() => { fetchMovies(debouncedSearchTerm); }, [debouncedSearchTerm, allType]);
+  useEffect(() => { loadTopRatedMovies(); }, [topRatedType]);
+  useEffect(() => { loadTrendingMovies(); }, [trendingType]);
+  useEffect(() => { if (selectedGenre) loadGenreMovies(selectedGenre.id); }, [selectedGenre, genreType]);
 
   useEffect(() => {
-    loadTrendingMovies();
-    loadTopRatedMovies();
     if (user) loadWatchHistory();
   }, [user]);
-
-  useEffect(() => {
-    if (selectedGenre) {
-      loadGenreMovies(selectedGenre.id);
-    }
-  }, [selectedGenre]);
 
   return (
     <main>
@@ -181,16 +210,19 @@ const Home = () => {
 
         {trendingMovies.length > 0 && !searchTerm && (
           <section className="trending">
-            <div className="flex items-center gap-3 mb-6 px-1">
-              <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
-              <h2 className="!mb-0">Trending Movies</h2>
+            <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
+                <h2 className="!mb-0">Trending</h2>
+              </div>
+              <TabToggle activeType={trendingType} setType={setTrendingType} />
             </div>
             <ul>
               {trendingMovies.map((movie, index) => (
                 <li key={movie.id}>
                   <p>{index + 1}</p>
-                  <Link to={`/movie/${movie.movie_id}`}>
-                    <img src={movie.poster_url} alt={movie.title} />
+                  <Link to={`/${trendingType}/${movie.id}`}>
+                    <img src={`https://image.tmdb.org/t/p/w500/${movie.poster_path}`} alt={movie.title || movie.name} />
                   </Link>
                 </li>
               ))}
@@ -199,9 +231,12 @@ const Home = () => {
         )}
 
         <section className="all-movies">
-          <div className="flex items-center gap-3 mb-6 px-1">
-            <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
-            <h2 className="!mb-0">{searchTerm ? "Search Results" : "All Movies"}</h2>
+          <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
+              <h2 className="!mb-0">{searchTerm ? "Search Results" : "Latest Entertainment"}</h2>
+            </div>
+            {!searchTerm && <TabToggle activeType={allType} setType={setAllType} />}
           </div>
           {isLoading ? (
             <Spinner />
@@ -209,9 +244,8 @@ const Home = () => {
             <p className="text-red-500">{errorMessage}</p>
           ) : (
             <ul>
-              {/* If searching show all matching, if not search just show 8 movies (2 rows of 4) */}
               {(searchTerm ? moviesList : moviesList.slice(0, 8)).map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
+                <MovieCard key={movie.id} movie={movie} type={searchTerm ? 'movie' : allType} />
               ))}
             </ul>
           )}
@@ -221,17 +255,19 @@ const Home = () => {
           <>
             {/* Top Rated Section */}
             <section className="all-movies !mt-24">
-              <div className="flex items-center gap-3 mb-6 px-1">
-                <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
-                <h2 className="!mb-0">Top Rated</h2>
+              <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
+                  <h2 className="!mb-0">Top Rated</h2>
+                </div>
+                <TabToggle activeType={topRatedType} setType={setTopRatedType} />
               </div>
               {isTopRatedLoading ? (
                 <Spinner />
               ) : (
                 <ul>
-                  {/* Just 1 row of 4 movies */}
                   {topRatedMovies.slice(0, 4).map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
+                    <MovieCard key={movie.id} movie={movie} type={topRatedType} />
                   ))}
                 </ul>
               )}
@@ -239,52 +275,54 @@ const Home = () => {
 
             {/* Genres Section with Custom Dropdown */}
             <section className="all-movies !mt-24">
-              <div className="flex items-center gap-3 mb-6 px-1 relative" ref={dropdownRef}>
-                <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
-                
-                <h2 className="!mb-0 flex items-center gap-2 cursor-pointer group" onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}>
-                  {selectedGenre.name} 
-                  <svg className={`w-6 h-6 text-[#bea7ff] transition-transform duration-300 ${isGenreDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </h2>
+              <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap" ref={dropdownRef}>
+                <div className="flex items-center gap-3 relative">
+                  <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
+                  
+                  <h2 className="!mb-0 flex items-center gap-2 cursor-pointer group" onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}>
+                    {selectedGenre.name} 
+                    <svg className={`w-6 h-6 text-[#bea7ff] transition-transform duration-300 ${isGenreDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </h2>
 
-                {/* Dropdown Menu */}
-                {isGenreDropdownOpen && (
-                  <div className="absolute top-10 left-4 z-50 w-56 bg-[#0a0a0f] border border-white/5 rounded-xl shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="max-h-72 overflow-y-auto hide-scrollbar">
-                      {TMDB_GENRES.map((genre) => {
-                        const isSelected = selectedGenre.id === genre.id;
-                        return (
-                          <button
-                            key={genre.id}
-                            onClick={() => {
-                              setSelectedGenre(genre);
-                              setIsGenreDropdownOpen(false);
-                            }}
-                            className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors hover:bg-white/5"
-                          >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/5 ${isSelected ? 'text-[#bea7ff] bg-[#bea7ff]/20' : 'text-white/60'}`}>
-                              <genre.icon />
-                            </div>
-                            <span className={`text-sm font-medium ${isSelected ? 'text-[#bea7ff]' : 'text-white/80'}`}>
-                              {genre.name}
-                            </span>
-                          </button>
-                        );
-                      })}
+                  {isGenreDropdownOpen && (
+                    <div className="absolute top-10 left-4 z-50 w-56 bg-[#0a0a0f] border border-white/5 rounded-xl shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="max-h-72 overflow-y-auto hide-scrollbar">
+                        {TMDB_GENRES.map((genre) => {
+                          const isSelected = selectedGenre.id === genre.id;
+                          return (
+                            <button
+                              key={genre.id}
+                              onClick={() => {
+                                setSelectedGenre(genre);
+                                setIsGenreDropdownOpen(false);
+                              }}
+                              className="w-full px-4 py-2.5 flex items-center gap-3 text-left transition-colors hover:bg-white/5"
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-white/5 ${isSelected ? 'text-[#bea7ff] bg-[#bea7ff]/20' : 'text-white/60'}`}>
+                                <genre.icon />
+                              </div>
+                              <span className={`text-sm font-medium ${isSelected ? 'text-[#bea7ff]' : 'text-white/80'}`}>
+                                {genre.name}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+                
+                <TabToggle activeType={genreType} setType={setGenreType} />
               </div>
 
               {isGenreLoading ? (
                 <Spinner />
               ) : (
                 <ul>
-                  {/* Just 1 row of 4 movies */}
                   {genreMovies.slice(0, 4).map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
+                    <MovieCard key={movie.id} movie={movie} type={genreType} />
                   ))}
                 </ul>
               )}

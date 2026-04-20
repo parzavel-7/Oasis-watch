@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import Spinner from "../components/Spinner.jsx";
 import { saveWatchHistory } from "../supabase.js";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -9,6 +9,9 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const MovieDetails = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const type = location.pathname.includes("/tv/") ? "tv" : "movie";
+  
   const { user } = useAuth();
   const [movie, setMovie] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +37,7 @@ const MovieDetails = () => {
     setErrorMessage("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/movie/${id}?append_to_response=credits`, {
+      const response = await fetch(`${API_BASE_URL}/${type}/${id}?append_to_response=credits`, {
         method: "GET",
         headers: {
           accept: "application/json",
@@ -43,10 +46,16 @@ const MovieDetails = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch movie details");
+        throw new Error("Failed to fetch details");
       }
 
       const data = await response.json();
+      
+      // Standardize title/date for database saving logic
+      if (type === "tv") {
+        data.title = data.name;
+      }
+      
       setMovie(data);
 
       // Save to watch history if user is logged in
@@ -54,8 +63,8 @@ const MovieDetails = () => {
         saveWatchHistory(user.id, data);
       }
     } catch (error) {
-      console.error("Error fetching movie details:", error);
-      setErrorMessage("Could not load movie details.");
+      console.error("Error fetching details:", error);
+      setErrorMessage("Could not load details.");
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +73,7 @@ const MovieDetails = () => {
   useEffect(() => {
     fetchMovieDetails();
     window.scrollTo(0, 0);
-  }, [id, user]);
+  }, [id, type, user]);
 
   if (isLoading)
     return (
@@ -82,6 +91,10 @@ const MovieDetails = () => {
       </div>
     );
 
+  const displayTitle = movie.title || movie.name;
+  const displayDate = movie.release_date || movie.first_air_date || "";
+  const displayRuntime = movie.runtime || (movie.episode_run_time ? movie.episode_run_time[0] : 0);
+
   return (
     <main className="min-h-screen bg-primary pb-20">
       <div className="pattern" />
@@ -95,14 +108,14 @@ const MovieDetails = () => {
           title="Double click for Fullscreen"
         >
           <iframe
-            src={`https://www.vidking.net/embed/movie/${id}`}
+            src={type === 'tv' ? `https://www.vidking.net/embed/tv/${id}/1/1` : `https://www.vidking.net/embed/movie/${id}`}
             className="w-full h-full"
             frameBorder="0"
             allowFullScreen
           ></iframe>
         </div>
 
-        {/* Movie Info Section */}
+        {/* Movie/TV Info Section */}
         <div className="flex flex-col md:flex-row gap-10 text-white">
           {/* Poster */}
           <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
@@ -112,14 +125,14 @@ const MovieDetails = () => {
                   ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                   : "/no-movie.png"
               }
-              alt={movie.title}
+              alt={displayTitle}
               className="rounded-3xl shadow-2xl w-full border border-white/10 object-cover"
             />
           </div>
 
           {/* Details */}
           <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">{movie.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">{displayTitle}</h1>
             {movie.tagline && (
               <p className="text-xl text-gray-400 italic mb-6">{movie.tagline}</p>
             )}
@@ -128,15 +141,25 @@ const MovieDetails = () => {
               <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-sm">
                 <img src="/star.svg" alt="rating" className="w-4 h-4" />
                 <span className="text-white font-medium">
-                  {movie.vote_average.toFixed(1)}
+                  {movie.vote_average ? movie.vote_average.toFixed(1) : "N/A"}
                 </span>
               </div>
               <span>•</span>
-              <span>{movie.release_date.split("-")[0]}</span>
-              <span>•</span>
-              <span>{Math.floor(movie.runtime / 60)}h {movie.runtime % 60}m</span>
-              <span>•</span>
-              <span>{movie.original_language.toUpperCase()}</span>
+              <span>{displayDate ? displayDate.split("-")[0] : "N/A"}</span>
+              
+              {displayRuntime > 0 && (
+                <>
+                  <span>•</span>
+                  <span>{Math.floor(displayRuntime / 60)}h {displayRuntime % 60}m</span>
+                </>
+              )}
+              
+              {movie.original_language && (
+                <>
+                  <span>•</span>
+                  <span>{movie.original_language.toUpperCase()}</span>
+                </>
+              )}
             </div>
 
             {/* Genres */}
@@ -164,18 +187,39 @@ const MovieDetails = () => {
                 <h4 className="text-gray-400 text-sm font-medium mb-1">Status</h4>
                 <p className="text-white font-semibold">{movie.status}</p>
               </div>
-              <div>
-                <h4 className="text-gray-400 text-sm font-medium mb-1">Budget</h4>
-                <p className="text-white font-semibold">
-                  {movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : "N/A"}
-                </p>
-              </div>
-              <div>
-                <h4 className="text-gray-400 text-sm font-medium mb-1">Revenue</h4>
-                <p className="text-white font-semibold">
-                  {movie.revenue ? `$${(movie.revenue / 1000000).toFixed(1)}M` : "N/A"}
-                </p>
-              </div>
+              
+              {type === 'movie' ? (
+                <>
+                  <div>
+                    <h4 className="text-gray-400 text-sm font-medium mb-1">Budget</h4>
+                    <p className="text-white font-semibold">
+                      {movie.budget ? `$${(movie.budget / 1000000).toFixed(1)}M` : "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-400 text-sm font-medium mb-1">Revenue</h4>
+                    <p className="text-white font-semibold">
+                      {movie.revenue ? `$${(movie.revenue / 1000000).toFixed(1)}M` : "N/A"}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <h4 className="text-gray-400 text-sm font-medium mb-1">Seasons</h4>
+                    <p className="text-white font-semibold">
+                      {movie.number_of_seasons || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-gray-400 text-sm font-medium mb-1">Episodes</h4>
+                    <p className="text-white font-semibold">
+                      {movie.number_of_episodes || "N/A"}
+                    </p>
+                  </div>
+                </>
+              )}
+              
               <div>
                 <h4 className="text-gray-400 text-sm font-medium mb-1">Production</h4>
                 <p className="text-white font-semibold truncate" title={movie.production_companies?.[0]?.name}>
