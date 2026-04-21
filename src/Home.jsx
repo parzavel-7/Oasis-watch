@@ -25,28 +25,46 @@ const TMDB_GENRES = [
   { id: 16, name: "Animation", icon: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg> },
 ];
 
-const TabToggle = ({ activeType, setType }) => (
-  <div className="flex items-center gap-6 border-b border-[#1f2123] w-fit px-1">
-    <button 
-      onClick={() => setType('movie')}
-      className={`text-sm md:text-base transition-all duration-300 relative pb-1 ${activeType === 'movie' ? 'text-white font-medium' : 'text-white/40 font-medium hover:text-white/60'}`}
+const TabToggle = ({ activeType, setType }) => {
+  const isMovie = activeType === 'movie';
+
+  return (
+    <div 
+      onClick={() => setType(isMovie ? 'tv' : 'movie')}
+      className="relative w-32 h-11 flex items-center cursor-pointer rounded-full bg-white/5 backdrop-blur-xl border border-white/20 shadow-[inset_0_2px_12px_rgba(0,0,0,0.6),0_4px_15px_rgba(0,0,0,0.3)] transition-all duration-500 group overflow-hidden"
     >
-      Movies
-      {activeType === 'movie' && (
-        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
-      )}
-    </button>
-    <button 
-      onClick={() => setType('tv')}
-      className={`text-sm md:text-base transition-all duration-300 relative pb-1 ${activeType === 'tv' ? 'text-white font-medium' : 'text-white/40 font-medium hover:text-white/60'}`}
-    >
-      Series
-      {activeType === 'tv' && (
-        <div className="absolute -bottom-[1px] left-0 right-0 h-[2px] bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
-      )}
-    </button>
-  </div>
-);
+      {/* Neon Glow Background */}
+      <div className={`absolute inset-0 transition-opacity duration-500 opacity-20 bg-[#ae8fff] blur-3xl`} />
+      <div className={`absolute inset-0 transition-shadow duration-500 shadow-[0_0_12px_rgba(174,143,255,0.2)]`} />
+
+      {/* Sliding Glass Thumb */}
+      <div 
+        className={`absolute left-1 w-9 h-9 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-3xl border border-white/40 shadow-[0_4px_20px_rgba(174,143,255,0.4),inset_0_0_12px_rgba(255,255,255,0.3)] transition-transform duration-500 ease-[cubic-bezier(0.68,-0.55,0.26,1.55)] z-20 ${isMovie ? 'translate-x-0' : 'translate-x-[5.25rem]'}`}
+      >
+        <div className="absolute inset-0 rounded-full bg-[#ae8fff]/20 blur-sm animate-pulse" />
+        {isMovie ? (
+          <svg className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
+          </svg>
+        ) : (
+          <svg className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        )}
+      </div>
+
+      {/* Text Labels */}
+      <div className="absolute inset-0 flex items-center justify-between px-3 pointer-events-none text-[10px] font-black text-white uppercase tracking-[0.1em] z-10">
+        <span className={`pl-[2px] transition-all duration-500 w-1/2 ${!isMovie ? 'opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(174,143,255,0.8)]' : 'opacity-20 scale-90 -translate-x-2'}`}>
+          Series
+        </span>
+        <span className={`pr-[2px] text-right transition-all duration-500 w-1/2 ${isMovie ? 'opacity-100 scale-110 drop-shadow-[0_0_10px_rgba(174,143,255,0.8)]' : 'opacity-20 scale-90 translate-x-2'}`}>
+          Movies
+        </span>
+      </div>
+    </div>
+  );
+};
 
 const Home = () => {
   const { searchTerm, setSearchTerm } = useSearch();
@@ -208,9 +226,24 @@ const Home = () => {
           )}
         </header>
 
+        {/* Atmosphere Mesh Gradient - Starts from Latest Entertainment to footer with natural blending */}
+        {!searchTerm && (
+          <div 
+            className="absolute top-[1000px] -left-[10%] w-[120%] bottom-0 pointer-events-none -z-10 overflow-hidden opacity-25"
+            style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_5%_10%,#7F3AA1_0%,transparent_50%),radial-gradient(circle_at_95%_20%,#0F083B_0%,transparent_50%),radial-gradient(circle_at_10%_50%,#0C0516_0%,transparent_60%),radial-gradient(circle_at_90%_80%,#5416B5_0%,transparent_60%),radial-gradient(circle_at_50%_95%,#7F3AA1_0%,transparent_50%)] blur-[140px] animate-[pulse_6s_cubic-bezier(0.4,0,0.6,1)_infinite]" />
+          </div>
+        )}
+
         {trendingMovies.length > 0 && !searchTerm && (
-          <section className="trending">
-            <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
+          <section className="trending relative">
+            {/* Atmosphere Background Text */}
+            <div className="absolute -top-12 -left-4 pointer-events-none select-none -z-10">
+              <span className="text-[120px] font-bold text-white/[0.04] leading-none uppercase tracking-tighter">Trending</span>
+            </div>
+            
+            <div className="flex items-center justify-between gap-3 mb-2 px-1 flex-wrap">
               <div className="flex items-center gap-3">
                 <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
                 <h2 className="!mb-0">Trending</h2>
@@ -230,7 +263,14 @@ const Home = () => {
           </section>
         )}
 
-        <section className="all-movies">
+        <section className="all-movies relative">
+          {/* Atmosphere Background Text */}
+          <div className="absolute -top-12 -left-4 pointer-events-none select-none -z-10">
+            <span className="text-[120px] font-bold text-white/[0.04] leading-none uppercase tracking-tighter">
+              {searchTerm ? "Search" : "Latest"}
+            </span>
+          </div>
+
           <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
@@ -243,9 +283,9 @@ const Home = () => {
           ) : errorMessage ? (
             <p className="text-red-500">{errorMessage}</p>
           ) : (
-            <ul>
+            <ul className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
               {(searchTerm ? moviesList : moviesList.slice(0, 8)).map((movie) => (
-                <MovieCard key={movie.id} movie={movie} type={searchTerm ? 'movie' : allType} />
+                <MovieCard key={movie.id} movie={movie} type={allType} />
               ))}
             </ul>
           )}
@@ -254,7 +294,12 @@ const Home = () => {
         {!searchTerm && (
           <>
             {/* Top Rated Section */}
-            <section className="all-movies !mt-24">
+            <section className="all-movies !mt-24 relative">
+              {/* Atmosphere Background Text */}
+              <div className="absolute -top-12 -left-4 pointer-events-none select-none -z-10">
+                <span className="text-[120px] font-bold text-white/[0.04] leading-none uppercase tracking-tighter">Top Rated</span>
+              </div>
+              
               <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap">
                 <div className="flex items-center gap-3">
                   <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
@@ -265,7 +310,7 @@ const Home = () => {
               {isTopRatedLoading ? (
                 <Spinner />
               ) : (
-                <ul>
+                <ul className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   {topRatedMovies.slice(0, 4).map((movie) => (
                     <MovieCard key={movie.id} movie={movie} type={topRatedType} />
                   ))}
@@ -274,7 +319,12 @@ const Home = () => {
             </section>
 
             {/* Genres Section with Custom Dropdown */}
-            <section className="all-movies !mt-24">
+            <section className="all-movies !mt-24 relative">
+              {/* Atmosphere Background Text */}
+              <div className="absolute -top-12 -left-4 pointer-events-none select-none -z-10">
+                <span className="text-[120px] font-bold text-white/[0.04] leading-none uppercase tracking-tighter">Genres</span>
+              </div>
+              
               <div className="flex items-center justify-between gap-3 mb-6 px-1 flex-wrap" ref={dropdownRef}>
                 <div className="flex items-center gap-3 relative">
                   <div className="w-[3px] h-7 bg-[#bea7ff] rounded-sm shadow-[0_0_12px_rgba(190,167,255,0.7)]" />
@@ -320,7 +370,7 @@ const Home = () => {
               {isGenreLoading ? (
                 <Spinner />
               ) : (
-                <ul>
+                <ul className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
                   {genreMovies.slice(0, 4).map((movie) => (
                     <MovieCard key={movie.id} movie={movie} type={genreType} />
                   ))}
