@@ -5,6 +5,7 @@ import Navbar from "./components/Navbar.jsx";
 import Footer from "./components/Footer.jsx";
 import Home from "./Home.jsx";
 import MovieDetails from "./pages/MovieDetails.jsx";
+import Explore from "./pages/Explore.jsx";
 
 const App = () => {
   return (
@@ -16,6 +17,8 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/movie/:id" element={<MovieDetails />} />
             <Route path="/tv/:id" element={<MovieDetails />} />
+            <Route path="/explore/:type/:category" element={<Explore />} />
+            <Route path="/explore/:type/:category/:id" element={<Explore />} />
           </Routes>
           <Footer />
         </Router>
