@@ -68,11 +68,6 @@ const MovieDetails = () => {
       }
       
       setMovie(data);
-
-      // Save to watch history if user is logged in
-      if (user) {
-        saveWatchHistory(user.id, data);
-      }
     } catch (error) {
       console.error("Error fetching details:", error);
       setErrorMessage("Could not load details.");
@@ -106,7 +101,14 @@ const MovieDetails = () => {
   useEffect(() => {
     fetchMovieDetails();
     window.scrollTo(0, 0);
-  }, [id, type, user]);
+  }, [id, type]);
+
+  // Separate effect for saving watch history to avoid re-fetching on auth changes
+  useEffect(() => {
+    if (user && movie && movie.id.toString() === id) {
+      saveWatchHistory(user.id, movie);
+    }
+  }, [user, movie?.id, id]);
 
   useEffect(() => {
     if (type === "tv" && movie) {

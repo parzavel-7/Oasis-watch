@@ -21,11 +21,14 @@
 }
 
 @layer base {
-  body {
-    font-family: "DM Sans", serif;
-    font-optical-sizing: auto;
-    background: #030014;
-  }
+  html,
+body {
+  font-family: "DM Sans", serif;
+  font-optical-sizing: auto;
+  background: #030014;
+  overflow-x: hidden;
+  width: 100%;
+}
 
   h1 {
     @apply mx-auto max-w-4xl text-center text-5xl font-bold leading-tight tracking-[-1%] text-white sm:text-[64px] sm:leading-[76px];

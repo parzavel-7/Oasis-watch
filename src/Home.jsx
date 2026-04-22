@@ -208,7 +208,7 @@ const Home = () => {
   }, [user]);
 
   return (
-    <main>
+    <main className="overflow-x-hidden">
       <div className="pattern" />
       <div className="wrapper">
         <header className="hero">
