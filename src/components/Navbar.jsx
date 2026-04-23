@@ -141,8 +141,8 @@ const Navbar = () => {
               />
             </Link>
 
-            {/* Center: Home Button */}
-            <div className="absolute left-1/2 -translate-x-1/2 z-10">
+            {/* Center: Home Button - Hidden on mobile */}
+            <div className="absolute left-1/2 -translate-x-1/2 z-10 hidden sm:block">
               <Link
                 to="/"
                 className="text-white/70 hover:text-white font-medium text-sm uppercase tracking-widest px-6 py-2 rounded-full transition-all hover:bg-white/5 active:scale-95 border border-transparent hover:border-white/10"

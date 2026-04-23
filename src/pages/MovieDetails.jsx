@@ -6,6 +6,7 @@ import MovieCard from "../components/MovieCard.jsx";
 import { saveWatchHistory } from "../supabase.js";
 import { useToast } from "../context/ToastContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useWishlist } from "../context/WishlistContext.jsx";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -23,6 +24,9 @@ const MovieDetails = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [showTrailer, setShowTrailer] = useState(false);
   const { showToast } = useToast();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+
+  const inWishlist = isInWishlist(id);
 
   // TV Specific States
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -188,7 +192,7 @@ const MovieDetails = () => {
         <div
           ref={playerContainerRef}
           onDoubleClick={toggleFullScreen}
-          className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl mb-12 border border-white/10 cursor-pointer bg-black animate-in zoom-in-95 duration-700"
+          className="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl mb-8 md:mb-12 border border-white/10 cursor-pointer bg-black animate-in zoom-in-95 duration-700"
           title="Double click for Fullscreen"
         >
           <iframe
@@ -229,9 +233,9 @@ const MovieDetails = () => {
           </div>
 
           {/* Details */}
-          <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col pt-2">
-            <div className="flex flex-wrap items-center gap-4 mb-2 animate-in fade-in slide-in-from-left-2 duration-700">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+          <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col pt-0 md:pt-2">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4 mb-4 animate-in fade-in slide-in-from-left-2 duration-700">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
                 {displayTitle}
               </h1>
               
@@ -250,6 +254,30 @@ const MovieDetails = () => {
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ae8fff]">Trailer</span>
                 </button>
               )}
+
+              {/* Wishlist Button */}
+              <button 
+                onClick={() => toggleWishlist(movie)}
+                className={`flex items-center gap-2 px-4 py-2 border rounded-full transition-all group mt-2 ${
+                  inWishlist 
+                    ? 'bg-[#ae8fff] border-[#ae8fff] text-black' 
+                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
+                }`}
+                title={inWishlist ? "Remove from My List" : "Add to My List"}
+              >
+                {inWishlist ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                  </svg>
+                )}
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${inWishlist ? 'text-black' : 'text-white/80'}`}>
+                  {inWishlist ? "In My List" : "My List"}
+                </span>
+              </button>
             </div>
             {movie.tagline && (
               <p className="text-xl text-gray-400 italic mb-6 animate-in slide-in-from-left-6 duration-700 delay-100">

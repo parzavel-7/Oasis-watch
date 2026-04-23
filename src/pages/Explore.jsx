@@ -164,7 +164,7 @@ const Explore = () => {
             </div>
 
             {/* Controls Bar */}
-            <div className="flex items-center gap-4 self-start md:self-end">
+            <div className="flex flex-wrap items-center gap-4 self-start md:self-end">
               {category === "genre" && (
                 <div className="relative" ref={dropdownRef}>
                   <button 
