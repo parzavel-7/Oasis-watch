@@ -45,7 +45,7 @@ export const WishlistProvider = ({ children }) => {
       return;
     }
 
-    const isCurrentlyIn = wishlist.some(m => m.id === movie.id);
+    const isCurrentlyIn = wishlist.some(m => Number(m.id) === Number(movie.id));
     
     // Optimistic Update
     const previousWishlist = [...wishlist];

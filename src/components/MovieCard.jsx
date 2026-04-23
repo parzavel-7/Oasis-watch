@@ -53,7 +53,7 @@ const MovieCard = ({
     }
   };
 
-  const movie = { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language };
+  const movie = { id, title, name, vote_average, poster_path, release_date, first_air_date, original_language, media_type: type };
   const inWishlist = isInWishlist(id);
 
   const handleWishlistToggle = async (e) => {
