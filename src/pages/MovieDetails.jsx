@@ -258,7 +258,7 @@ const MovieDetails = () => {
               {/* Wishlist Button */}
               <button 
                 onClick={() => toggleWishlist(movie)}
-                className={`flex items-center gap-2 px-4 py-2 border rounded-full transition-all group mt-2 ${
+                className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full transition-all group mt-2 min-w-[135px] ${
                   inWishlist 
                     ? 'bg-[#ae8fff] border-[#ae8fff] text-black' 
                     : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20'
@@ -266,17 +266,28 @@ const MovieDetails = () => {
                 title={inWishlist ? "Remove from My List" : "Add to My List"}
               >
                 {inWishlist ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
-                  <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                   </svg>
                 )}
                 <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${inWishlist ? 'text-black' : 'text-white/80'}`}>
                   {inWishlist ? "In My List" : "My List"}
                 </span>
+              </button>
+
+              {/* Share Button */}
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-2 px-5 py-2 border border-white/10 rounded-full hover:bg-white/10 hover:border-white/20 transition-all group mt-2 bg-white/5"
+              >
+                <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/80 group-hover:text-white transition-colors">Share</span>
               </button>
             </div>
             {movie.tagline && (
@@ -316,18 +327,7 @@ const MovieDetails = () => {
               )}
             </div>
 
-            <div className="flex items-center gap-4 mb-8">
-              {/* Share Button */}
-              <button 
-                onClick={handleShare}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:border-white/20 transition-all group"
-              >
-                <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                </svg>
-                <span className="text-xs font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Share</span>
-              </button>
-            </div>
+
 
             {/* Genres */}
             {movie.genres && movie.genres.length > 0 && (

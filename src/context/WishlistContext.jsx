@@ -71,7 +71,8 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const isInWishlist = useCallback((movieId) => {
-    return wishlist.some(m => m.id === movieId);
+    if (!movieId) return false;
+    return wishlist.some(m => Number(m.id) === Number(movieId));
   }, [wishlist]);
 
   return (
