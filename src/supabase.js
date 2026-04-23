@@ -150,3 +150,74 @@ export const removeFromWatchHistory = async (userId, movieId, rowId) => {
     console.error("Supabase removeFromWatchHistory error:", error);
   }
 };
+
+// --- WISHLIST / MY LIST ---
+
+export const addToWishlist = async (userId, movie) => {
+  if (!userId) return;
+  try {
+    const { error } = await supabase
+      .from("wishlist")
+      .upsert({
+        user_id: userId,
+        movie_id: movie.id.toString(),
+        movie_data: movie, // Store full movie data for easier retrieval
+        created_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id, movie_id'
+      });
+    if (error) throw error;
+  } catch (error) {
+    console.error("Supabase addToWishlist error:", error);
+    throw error;
+  }
+};
+
+export const removeFromWishlist = async (userId, movieId) => {
+  if (!userId) return;
+  try {
+    const { error } = await supabase
+      .from("wishlist")
+      .delete()
+      .eq("user_id", userId)
+      .eq("movie_id", movieId.toString());
+    if (error) throw error;
+  } catch (error) {
+    console.error("Supabase removeFromWishlist error:", error);
+    throw error;
+  }
+};
+
+export const getWishlist = async (userId) => {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from("wishlist")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Supabase getWishlist error:", error);
+    return [];
+  }
+};
+
+export const isInWishlist = async (userId, movieId) => {
+  if (!userId || !movieId) return false;
+  try {
+    const { data, error } = await supabase
+      .from("wishlist")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("movie_id", movieId.toString())
+      .single();
+    if (error && error.code !== "PGRST116") throw error;
+    return !!data;
+  } catch (error) {
+    console.error("Supabase isInWishlist error:", error);
+    return false;
+  }
+};
+

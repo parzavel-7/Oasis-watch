@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import MovieCard from "../components/MovieCard.jsx";
 import Spinner from "../components/Spinner.jsx";
-import { TMDB_GENRES } from "../constants.js";
+import SkeletonCard from "../components/SkeletonCard.jsx";
+import { TMDB_GENRES } from "../constants.jsx";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -50,6 +51,17 @@ const Explore = () => {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenreDropdownOpen, setIsGenreDropdownOpen] = useState(false);
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("popularity.desc");
+
+  const sortOptions = [
+    { label: "Most Popular", value: "popularity.desc" },
+    { label: "Top Rated", value: "vote_average.desc" },
+    { label: "Newest", value: "primary_release_date.desc" },
+    { label: "Oldest", value: "primary_release_date.asc" }
+  ];
+
+  const currentSort = sortOptions.find(opt => opt.value === sortBy);
 
   const currentGenre = TMDB_GENRES.find((g) => g.id.toString() === id) || TMDB_GENRES[0];
 
@@ -87,9 +99,9 @@ const Explore = () => {
         } else if (category === "top_rated") {
           endpoint = `${API_BASE_URL}/${type}/top_rated?page=${page}`;
         } else if (category === "genre") {
-          endpoint = `${API_BASE_URL}/discover/${type}?with_genres=${id}&page=${page}&sort_by=popularity.desc&vote_count.gte=10`;
+          endpoint = `${API_BASE_URL}/discover/${type}?with_genres=${id}&page=${page}&sort_by=${sortBy}&vote_count.gte=10`;
         } else {
-          endpoint = `${API_BASE_URL}/discover/${type}?page=${page}&sort_by=popularity.desc`;
+          endpoint = `${API_BASE_URL}/discover/${type}?page=${page}&sort_by=${sortBy}`;
         }
 
         const res = await fetch(endpoint, {
@@ -112,7 +124,7 @@ const Explore = () => {
   useEffect(() => {
     fetchItems();
     window.scrollTo(0, 0);
-  }, [type, category, id]);
+  }, [type, category, id, sortBy]);
 
   const handleTypeChange = (newType) => {
     navigate(`/explore/${newType}/${category}${id ? `/${id}` : ""}`);
@@ -133,12 +145,12 @@ const Explore = () => {
             <div className="flex flex-col gap-6">
               <button 
                 onClick={() => navigate("/")}
-                className="flex items-center gap-2 text-white/40 hover:text-[#ae8fff] transition-all group w-fit"
+                className="flex items-center gap-2 text-white hover:text-[#ae8fff] transition-all group w-fit"
               >
-                <svg className="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
-                <span className="font-bold text-xs uppercase tracking-widest">Back to Home</span>
+                <span className="font-bold text-[10px] uppercase tracking-widest">Back to Home</span>
               </button>
               
               <div className="flex items-center gap-4">
@@ -195,6 +207,39 @@ const Explore = () => {
               )}
               
               <TabToggle activeType={type} setType={handleTypeChange} />
+
+              {/* Sort Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                  className="h-11 px-5 flex items-center gap-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full hover:bg-white/10 hover:border-white/20 transition-all group"
+                >
+                  <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                  </svg>
+                  <span className="text-white font-bold text-sm truncate max-w-[80px] sm:max-w-none">{currentSort.label}</span>
+                  <svg className={`w-4 h-4 text-white/40 transition-transform duration-300 ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {isSortDropdownOpen && (
+                  <div className="absolute top-14 right-0 z-50 w-48 bg-[#0a0a0f] border border-white/5 rounded-2xl shadow-2xl py-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 backdrop-blur-2xl">
+                    {sortOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          setSortBy(opt.value);
+                          setIsSortDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left text-sm font-bold transition-all hover:bg-[#ae8fff]/10 ${sortBy === opt.value ? 'text-[#ae8fff]' : 'text-white/60 hover:text-white'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -204,9 +249,8 @@ const Explore = () => {
         </header>
 
         {isLoading ? (
-          <div className="flex flex-col justify-center items-center py-40 gap-4">
-            <Spinner />
-            <p className="text-white/20 font-bold uppercase tracking-[0.2em] text-xs">Fetching Discoveries</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-10">
+            {Array(12).fill(0).map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">

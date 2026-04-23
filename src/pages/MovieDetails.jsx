@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner.jsx";
+import SkeletonCard from "../components/SkeletonCard.jsx";
 import MovieCard from "../components/MovieCard.jsx";
 import { saveWatchHistory } from "../supabase.js";
+import { useToast } from "../context/ToastContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
@@ -11,6 +13,7 @@ const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const MovieDetails = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const type = location.pathname.includes("/tv/") ? "tv" : "movie";
 
   const { user } = useAuth();
@@ -18,6 +21,8 @@ const MovieDetails = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPosterLoaded, setIsPosterLoaded] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showTrailer, setShowTrailer] = useState(false);
+  const { showToast } = useToast();
 
   // TV Specific States
   const [selectedSeason, setSelectedSeason] = useState(1);
@@ -49,7 +54,7 @@ const MovieDetails = () => {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/${type}/${id}?append_to_response=credits,recommendations`,
+        `${API_BASE_URL}/${type}/${id}?append_to_response=credits,recommendations,videos`,
         {
           method: "GET",
           headers: {
@@ -82,6 +87,19 @@ const MovieDetails = () => {
       setErrorMessage("Could not load details.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: movie?.title || movie?.name || "Oasis Watch",
+        url: url
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      showToast("Link copied to clipboard!", "success");
     }
   };
 
@@ -153,6 +171,19 @@ const MovieDetails = () => {
     <main className="min-h-screen bg-primary pb-20 overflow-x-hidden">
       <div className="pattern" />
       <div className="wrapper relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 animate-in fade-in duration-1000">
+        {/* Back Button */}
+        <div className="pt-6 mb-6">
+          <button 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-white hover:text-[#ae8fff] transition-all group w-fit"
+          >
+            <svg className="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span className="font-bold text-[10px] uppercase tracking-widest">Back to Home</span>
+          </button>
+        </div>
+
         {/* Player Section */}
         <div
           ref={playerContainerRef}
@@ -199,9 +230,27 @@ const MovieDetails = () => {
 
           {/* Details */}
           <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col pt-2">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight text-left w-full mr-auto animate-in fade-in slide-in-from-left-2 duration-700">
-              {displayTitle}
-            </h1>
+            <div className="flex flex-wrap items-center gap-4 mb-2 animate-in fade-in slide-in-from-left-2 duration-700">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+                {displayTitle}
+              </h1>
+              
+              {/* Watch Trailer Button */}
+              {movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube') && (
+                <button 
+                  onClick={() => setShowTrailer(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#ae8fff]/10 border border-[#ae8fff]/20 rounded-full hover:bg-[#ae8fff]/20 hover:border-[#ae8fff]/40 transition-all group mt-2"
+                  title="Watch Trailer"
+                >
+                  <div className="w-6 h-6 flex items-center justify-center bg-[#ae8fff] rounded-full shadow-[0_0_10px_rgba(174,143,255,0.5)]">
+                    <svg className="w-3.5 h-3.5 text-black translate-x-[0.5px]" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#ae8fff]">Trailer</span>
+                </button>
+              )}
+            </div>
             {movie.tagline && (
               <p className="text-xl text-gray-400 italic mb-6 animate-in slide-in-from-left-6 duration-700 delay-100">
                 {movie.tagline}
@@ -237,6 +286,19 @@ const MovieDetails = () => {
                   </span>
                 </>
               )}
+            </div>
+
+            <div className="flex items-center gap-4 mb-8">
+              {/* Share Button */}
+              <button 
+                onClick={handleShare}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 hover:border-white/20 transition-all group"
+              >
+                <svg className="w-4 h-4 text-[#ae8fff]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span className="text-xs font-bold uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">Share</span>
+              </button>
             </div>
 
             {/* Genres */}
@@ -615,20 +677,51 @@ const MovieDetails = () => {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-10">
-                {movie.recommendations.results
-                  .filter((m) => m.poster_path)
-                  .slice(0, 12)
-                  .map((rec) => (
-                    <MovieCard 
-                      key={rec.id} 
-                      movie={rec} 
-                      type={type} 
-                    />
-                  ))}
+                {isLoading ? (
+                  Array(6).fill(0).map((_, i) => <SkeletonCard key={i} />)
+                ) : (
+                  movie.recommendations.results
+                    .filter((m) => m.poster_path)
+                    .slice(0, 12)
+                    .map((rec) => (
+                      <MovieCard 
+                        key={rec.id} 
+                        movie={rec} 
+                        type={type} 
+                      />
+                    ))
+                )}
               </div>
             </div>
           )}
       </div>
+
+      {/* Trailer Modal */}
+      {showTrailer && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300">
+          <div 
+            className="absolute inset-0 bg-black/90 backdrop-blur-md"
+            onClick={() => setShowTrailer(false)}
+          />
+          <div className="relative w-full max-w-5xl aspect-video bg-black rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(174,143,255,0.3)] border border-white/10 z-10 animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setShowTrailer(false)}
+              className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center bg-black/50 hover:bg-[#ae8fff] text-white rounded-full backdrop-blur-md transition-all group"
+            >
+              <svg className="w-5 h-5 transition-transform group-hover:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${movie.videos?.results?.find(v => v.type === 'Trailer' && v.site === 'YouTube')?.key}?autoplay=1`}
+              className="w-full h-full"
+              frameBorder="0"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 };
