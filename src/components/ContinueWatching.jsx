@@ -12,16 +12,16 @@ const ContinueWatching = ({ history }) => {
   const hasHistory = history && history.length > 0;
   const { user } = useAuth();
 
-  const handleRemove = async (e, movieId, rowId) => {
+  const handleRemove = async (e, movieId, rowId, mediaType) => {
     e.preventDefault();
     e.stopPropagation();
 
     // Optimistically update the UI
-    setEnrichedHistory((prev) => prev.filter((item) => item.movie_id !== movieId));
+    setEnrichedHistory((prev) => prev.filter((item) => item.id !== rowId));
 
     // Remove from database
     if (user && user.id) {
-      await removeFromWatchHistory(user.id, movieId, rowId);
+      await removeFromWatchHistory(user.id, movieId, rowId, mediaType);
     }
   };
 
@@ -32,22 +32,52 @@ const ContinueWatching = ({ history }) => {
     const enrich = async () => {
       const results = await Promise.all(
         history.map(async (item) => {
-          if (item.backdrop_url) return item;
+          // If we already have backdrop AND media_type, no need to enrich
+          if (item.backdrop_url && item.media_type) return item;
 
           try {
-            const res = await fetch(`${TMDB_API}/movie/${item.movie_id}`, {
-              headers: {
-                accept: "application/json",
-                Authorization: `Bearer ${API_KEY}`,
-              },
-            });
-            const data = await res.json();
-            return {
-              ...item,
-              backdrop_url: data.backdrop_path
-                ? `https://image.tmdb.org/t/p/w780/${data.backdrop_path}`
-                : item.poster_url,
-            };
+            // If media_type is missing, we need to find it
+            let detectedType = item.media_type;
+            let data = null;
+
+            if (!detectedType) {
+              // Try movie first
+              const movieRes = await fetch(`${TMDB_API}/movie/${item.movie_id}`, {
+                headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` },
+              });
+              
+              if (movieRes.ok) {
+                detectedType = "movie";
+                data = await movieRes.json();
+              } else {
+                // Try TV
+                const tvRes = await fetch(`${TMDB_API}/tv/${item.movie_id}`, {
+                  headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` },
+                });
+                if (tvRes.ok) {
+                  detectedType = "tv";
+                  data = await tvRes.json();
+                }
+              }
+            } else {
+              // We have the type, just fetch the data for the backdrop
+              const res = await fetch(`${TMDB_API}/${detectedType}/${item.movie_id}`, {
+                headers: { accept: "application/json", Authorization: `Bearer ${API_KEY}` },
+              });
+              if (res.ok) data = await res.json();
+            }
+
+            if (data) {
+              return {
+                ...item,
+                media_type: detectedType,
+                backdrop_url: data.backdrop_path
+                  ? `https://image.tmdb.org/t/p/w780/${data.backdrop_path}`
+                  : item.poster_url,
+              };
+            }
+            
+            return { ...item, backdrop_url: item.poster_url };
           } catch {
             return { ...item, backdrop_url: item.poster_url };
           }
@@ -119,8 +149,8 @@ const ContinueWatching = ({ history }) => {
 
             return (
               <Link
-                key={item.$id || index}
-                to={`/movie/${item.movie_id}`}
+                key={item.id || item.$id || index}
+                to={`/${item.media_type === 'tv' ? 'tv' : 'movie'}/${item.movie_id}${item.media_type === 'tv' && item.last_season ? `?s=${item.last_season}&e=${item.last_episode || 1}` : ''}`}
                 className="flex-none w-[150px] sm:w-[180px] md:w-[210px] snap-start group/card relative rounded-md overflow-hidden bg-[#181818] shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:z-10"
               >
                 <div className="w-full aspect-video relative overflow-hidden">
@@ -137,13 +167,18 @@ const ContinueWatching = ({ history }) => {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                   <div className="absolute top-2 left-2">
                     <span className="text-[8px] sm:text-[9px] font-black tracking-[0.18em] text-white/70 uppercase">
-                      MOVIE
+                      {item.media_type === 'tv' ? 'SERIES' : 'MOVIE'}
                     </span>
                   </div>
                   <div className="absolute bottom-8 left-2 right-10">
                     <p className="text-white text-[11px] sm:text-[12px] font-semibold leading-tight line-clamp-1 drop-shadow-lg">
                       {item.movie_title}
                     </p>
+                    {item.media_type === 'tv' && item.last_season && (
+                      <p className="text-[#ae8fff] text-[9px] font-bold mt-0.5 drop-shadow-md">
+                        S{item.last_season} E{item.last_episode || 1}
+                      </p>
+                    )}
                   </div>
 
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity duration-200">
@@ -156,7 +191,7 @@ const ContinueWatching = ({ history }) => {
 
                   {/* Remove Button */}
                   <button
-                    onClick={(e) => handleRemove(e, item.movie_id, item.id || item.$id)}
+                    onClick={(e) => handleRemove(e, item.movie_id, item.id || item.$id, item.media_type)}
                     className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/50 hover:text-white hover:bg-red-600 transition-all opacity-0 group-hover/card:opacity-100 z-30"
                     aria-label="Remove from history"
                   >

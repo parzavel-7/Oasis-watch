@@ -29,8 +29,19 @@ const MovieDetails = () => {
   const inWishlist = isInWishlist(id);
 
   // TV Specific States
-  const [selectedSeason, setSelectedSeason] = useState(1);
-  const [selectedEpisode, setSelectedEpisode] = useState(1);
+  const queryParams = new URLSearchParams(window.location.search);
+  const [selectedSeason, setSelectedSeason] = useState(Number(queryParams.get("s")) || 1);
+  const [selectedEpisode, setSelectedEpisode] = useState(Number(queryParams.get("e")) || 1);
+
+  // Sync state if URL changes (e.g. back/forward navigation)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const s = params.get("s");
+    const e = params.get("e");
+    if (s) setSelectedSeason(Number(s));
+    if (e) setSelectedEpisode(Number(e));
+  }, [location.search]);
+
   const [episodes, setEpisodes] = useState([]);
   const [isEpisodesLoading, setIsEpisodesLoading] = useState(false);
   const [episodeSearch, setEpisodeSearch] = useState("");
@@ -56,9 +67,9 @@ const MovieDetails = () => {
     setIsLoading(true);
     setErrorMessage("");
 
-    try {
+    const tryFetch = async (currentType) => {
       const response = await fetch(
-        `${API_BASE_URL}/${type}/${id}?append_to_response=credits,recommendations,videos`,
+        `${API_BASE_URL}/${currentType}/${id}?append_to_response=credits,recommendations,videos`,
         {
           method: "GET",
           headers: {
@@ -67,6 +78,24 @@ const MovieDetails = () => {
           },
         },
       );
+      return response;
+    };
+
+    try {
+      let response = await tryFetch(type);
+
+      // Fallback logic: if it's a 404, try the other type
+      if (!response.ok && response.status === 404) {
+        const fallbackType = type === "movie" ? "tv" : "movie";
+        const fallbackResponse = await tryFetch(fallbackType);
+        
+        if (fallbackResponse.ok) {
+          // Successfully found the item with the other type!
+          // We should redirect to the correct URL to maintain consistency
+          navigate(`/${fallbackType}/${id}`, { replace: true });
+          return; // The navigate will trigger a re-mount/re-fetch with the correct type
+        }
+      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch details");
@@ -77,12 +106,16 @@ const MovieDetails = () => {
       // Standardize title/date for database saving logic
       if (type === "tv") {
         data.title = data.name;
-        // Find the first actual season number (skipping specials if they aren't explicitly requested)
-        const firstSeason =
-          data.seasons?.find((s) => s.season_number > 0)?.season_number ||
-          data.seasons?.[0]?.season_number ||
-          1;
-        setSelectedSeason(firstSeason);
+        
+        // Only set default season if not already set by URL params
+        const params = new URLSearchParams(location.search);
+        if (!params.get("s")) {
+          const firstSeason =
+            data.seasons?.find((s) => s.season_number > 0)?.season_number ||
+            data.seasons?.[0]?.season_number ||
+            1;
+          setSelectedSeason(firstSeason);
+        }
       }
 
       setMovie(data);
@@ -132,6 +165,19 @@ const MovieDetails = () => {
     }
   };
 
+  // Sync URL with current season/episode
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (type === "tv") {
+      params.set("s", selectedSeason);
+      params.set("e", selectedEpisode);
+      const newSearch = params.toString();
+      if (newSearch !== location.search.replace('?', '')) {
+        navigate(`${location.pathname}?${newSearch}`, { replace: true });
+      }
+    }
+  }, [selectedSeason, selectedEpisode, type, location.pathname, navigate]);
+
   useEffect(() => {
     fetchMovieDetails();
     window.scrollTo(0, 0);
@@ -140,9 +186,9 @@ const MovieDetails = () => {
   // Separate effect for saving watch history to avoid re-fetching on auth changes
   useEffect(() => {
     if (user && movie && movie.id.toString() === id) {
-      saveWatchHistory(user.id, movie);
+      saveWatchHistory(user.id, movie, type, selectedSeason, selectedEpisode);
     }
-  }, [user, movie?.id, id]);
+  }, [user, movie?.id, id, type, selectedSeason, selectedEpisode]);
 
   useEffect(() => {
     if (type === "tv" && movie) {

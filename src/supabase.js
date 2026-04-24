@@ -73,7 +73,7 @@ export const getCurrentUser = async () => {
 
 // --- WATCH HISTORY ---
 
-export const saveWatchHistory = async (userId, movie) => {
+export const saveWatchHistory = async (userId, movie, mediaType = "movie", lastSeason = 1, lastEpisode = 1) => {
   if (!userId) return;
 
   const backdropUrl = movie.backdrop_path
@@ -81,22 +81,43 @@ export const saveWatchHistory = async (userId, movie) => {
     : `https://image.tmdb.org/t/p/w500/${movie.poster_path}`;
 
   try {
-    // Supabase upsert works well if you have a unique constraint on (user_id, movie_id)
-    const { error } = await supabase
+    // Find existing entry regardless of media_type to prevent duplicates from legacy data
+    const { data: existing } = await supabase
       .from("watch_history")
-      .upsert({
-        user_id: userId,
-        movie_id: movie.id.toString(),
-        movie_title: movie.title,
-        poster_url: `https://image.tmdb.org/t/p/w500/${movie.poster_path}`,
-        backdrop_url: backdropUrl,
-        timestamp: new Date().toISOString(),
-        last_position: 0
-      }, {
-        onConflict: 'user_id, movie_id'
-      });
+      .select("id")
+      .eq("user_id", userId)
+      .eq("movie_id", movie.id.toString())
+      .maybeSingle();
 
-    if (error) throw error;
+    const historyData = {
+      user_id: userId,
+      movie_id: movie.id.toString(),
+      movie_title: movie.title || movie.name,
+      poster_url: `https://image.tmdb.org/t/p/w500/${movie.poster_path}`,
+      backdrop_url: backdropUrl,
+      timestamp: new Date().toISOString(),
+      last_position: 0,
+      media_type: mediaType,
+      last_season: mediaType === "tv" ? lastSeason : null,
+      last_episode: mediaType === "tv" ? lastEpisode : null
+    };
+
+    let result;
+    if (existing) {
+      result = await supabase.from("watch_history").update(historyData).eq("id", existing.id);
+    } else {
+      result = await supabase.from("watch_history").insert(historyData);
+    }
+
+    // If save failed (e.g. missing last_season/last_episode columns), retry without those fields
+    if (result.error) {
+      const { last_season, last_episode, ...basicData } = historyData;
+      if (existing) {
+        await supabase.from("watch_history").update(basicData).eq("id", existing.id);
+      } else {
+        await supabase.from("watch_history").insert(basicData);
+      }
+    }
   } catch (error) {
     console.error("Supabase saveWatchHistory error:", error);
   }
@@ -121,7 +142,7 @@ export const getWatchHistory = async (userId) => {
   }
 };
 
-export const removeFromWatchHistory = async (userId, movieId, rowId) => {
+export const removeFromWatchHistory = async (userId, movieId, rowId, mediaType = "movie") => {
   if (!userId || !movieId) return;
   try {
     if (rowId) {
@@ -136,14 +157,8 @@ export const removeFromWatchHistory = async (userId, movieId, rowId) => {
       .from("watch_history")
       .delete()
       .eq("user_id", userId)
-      .eq("movie_id", movieId);
-
-    // Some DB schemas might store movie_id as an integer and postgrest can be sensitive
-    await supabase
-      .from("watch_history")
-      .delete()
-      .eq("user_id", userId)
-      .eq("movie_id", Number(movieId));
+      .eq("movie_id", movieId)
+      .eq("media_type", mediaType);
 
     if (error) throw error;
   } catch (error) {

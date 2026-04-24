@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation, Link } from "react-router-dom";
 import { useDebounce } from "react-use";
 import Search from "./components/Search.jsx";
 import Spinner from "./components/Spinner.jsx";
@@ -117,6 +117,7 @@ const Home = () => {
 
   const dropdownRef = useRef(null);
   const { user } = useAuth();
+  const location = useLocation();
 
   useDebounce(() => setDebouncedSearchTerm(searchTerm || ""), 500, [
     searchTerm,
@@ -250,7 +251,7 @@ const Home = () => {
     }
   };
 
-  const loadWatchHistory = async () => {
+  const loadWatchHistory = useCallback(async () => {
     if (!user) return;
     try {
       const history = await getWatchHistory(user.id);
@@ -258,7 +259,7 @@ const Home = () => {
     } catch (err) {
       console.error("Error fetching watch history:", err);
     }
-  };
+  }, [user]);
 
   const loadWishlist = async () => {
     // Moved to WishlistContext
@@ -278,11 +279,23 @@ const Home = () => {
     if (selectedGenre) loadGenreMovies(selectedGenre.id);
   }, [selectedGenre, genreType]);
 
+  // Re-fetch watch history whenever user changes OR we navigate back to home
   useEffect(() => {
     if (user) {
       loadWatchHistory();
     }
-  }, [user]);
+  }, [user, location.key, loadWatchHistory]);
+
+  // Also re-fetch when the tab becomes visible again (e.g. user switches tabs)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && user) {
+        loadWatchHistory();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [user, loadWatchHistory]);
 
   return (
     <main className="overflow-x-hidden">
